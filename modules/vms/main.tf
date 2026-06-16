@@ -1,21 +1,28 @@
-resource "google_compute_instance" "vm" { 
-      name   = var.name
-      machine_type = var.machine_type
-    zone         = var.zone
+resource "google_compute_instance" "vm" {
+  name         = var.name
+  machine_type = var.machine_type
+  zone         = var.zone
 
 
+  tags = var.tags
 
-    boot_disk {
-      initialize_params {
-          image = var.image
-      }
+  metadata_startup_script = var.startup_script
+
+
+  boot_disk {
+    initialize_params {
+      image = var.image
     }
+  }
 
-    network_interface {
-      network = var.network
-      subnetwork = var.network
+  dynamic "network_interface" {
+    for_each = var.network_interfaces
+
+    content {
+      network    = network_interface.value.network
+      subnetwork = network_interface.value.subnetwork
+
       access_config {}
     }
-
-    metadata_startup_script = var.startup_script 
+  }
 }
