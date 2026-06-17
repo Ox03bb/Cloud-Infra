@@ -46,7 +46,7 @@ locals {
       vpc_name = "managmentnet"
       is_public_vpc = false
       subnets = {
-        subnet-4 = {
+        subnet-1 = {
           cidr   = "10.130.0.0/20"
           region = "us-central1"
         }
@@ -81,7 +81,7 @@ locals {
 
     # private network VMs
     vm-4 = {
-      name       = "privatenet"
+      name       = "privatenet-us-vm"
       zone       = "us-central1-a"
       type      = "e2-medium"
       vpc        = "privatenet"
@@ -92,18 +92,18 @@ locals {
     # managmentnet VMs
 
     vm-5 = {
-      name       = "privatenet"
-      zone       = "us-central1-a"
-      vpc        = "privatenet"
-      subnet     = "subnet-2"
-      network_ip = "10.130.1.1/20"
+      name       = "privatenet-eu-vm"
+      zone       = "us-central1-b"
+      vpc        = "managmentnet"
+      subnet     = "subnet-1"
+      network_ip = "10.130.1.1"
     }
 
     vm-6 = {
-      name       = "managmentnet"
+      name       = "managmentnet-us-vm"
       zone       = "us-central1-a"
       vpc        = "managmentnet"
-      subnet     = "subnet-4"
+      subnet     = "subnet-1"
       network_ip = "10.130.1.2"
     }
   }
@@ -159,10 +159,20 @@ module "pubsub" {
   maximum_backoff = "600s"
 
   publisher_members = [
-    "serviceAccount:api@project-id.iam.gserviceaccount.com"
+    # "serviceAccount:api@project-id.iam.gserviceaccount.com"  # Service account must exist before uncommenting
   ]
 
   subscriber_members = [
     "allAuthenticatedUsers"
   ]
+}
+
+#! GCS  
+module "gcs" {
+  source = "./modules/storage/gcs"
+
+  name          = "cloud-infra-app-bucket-${var.project_id}"
+  location      = "US"
+  storage_class = "STANDARD"
+  force_destroy = false
 }
