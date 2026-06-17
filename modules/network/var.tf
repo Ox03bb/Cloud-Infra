@@ -5,7 +5,8 @@ variable "vpc_name" {
 
 # subnet variables
 variable "subnet_name" {
-  type = string
+  type    = string
+  default = ""
 }
 
 variable "subnets" {
@@ -22,12 +23,15 @@ variable "firewall_allow" {
     protocol = string
     ports    = list(string)
   }))
+  default = []
 }
 
 variable "firewall_source_ranges" {
-  type = list(string)
+  type    = list(string)
+  default = []
 }
 
 variable "firewall_target_tags" {
-  type = list(string)
+  type    = list(string)
+  default = []
 }

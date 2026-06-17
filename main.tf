@@ -8,75 +8,85 @@ terraform {
 }
 
 provider "google" {
-  project = "project-745fd197-4b37-4048-90a"
-  region  = "us-central1"
+  project = var.project_id
+  region  = var.defualt_region
 }
 
 locals {
+  vpcs = {
+    primary = {
+      vpc_name = "cloud-infra-primary-vpc"
+      subnets = {
+        subnet-1 = {
+          cidr   = "10.128.0.0/20"
+          region = "us-central1"
+        }
+        subnet-2 = {
+          cidr   = "10.132.0.0/20"
+          region = "europe-west1"
+        }
+      }
+    }
+    secondary = {
+      vpc_name = "cloud-infra-secondary-vpc"
+      subnets = {
+        subnet-3 = {
+          cidr   = "10.140.0.0/20"
+          region = "us-central1"
+        }
+      }
+    }
+  }
+
   vms = {
     vm-1 = {
-      name = "vm-1"
-      zone = "us-central1-a"
-      network_interfaces = [
-        {
-          network    = google_compute_network.vpc.self_link
-          subnetwork = google_compute_subnetwork.subnet.self_link
-        }
-      ]
+      name       = "mynet-us-vm-1"
+      zone       = "us-central1-a"
+      vpc        = "primary"
+      subnet     = "subnet-1"
+      network_ip = "10.128.0.2"
     }
     vm-2 = {
-      name = "vm-2"
-      zone = "us-central1-a"
-      network_interfaces = [
-        {
-          network    = google_compute_network.vpc.self_link
-          subnetwork = google_compute_subnetwork.subnet.self_link
-        }
-      ]
+      name       = "mynet-us-vm-2"
+      zone       = "us-central1-a"
+      vpc        = "primary"
+      subnet     = "subnet-1"
+      network_ip = "10.128.0.3"
     }
-  }
-
-  subnets = {
-    subnet-1 = {
-      name          = "cloud-infra-subnet"
-      ip_cidr_range = "10.10.0.0/24"
-      region        = "us-central1"
-
-    }
-    subnet-2 = {
-      name          = "cloud-infra-subnet-2"
-      ip_cidr_range = ""
-
+    vm-3 = {
+      name       = "mynet-eu-vm-1"
+      zone       = "europe-west1-b"
+      vpc        = "primary"
+      subnet     = "subnet-2"
+      network_ip = "10.132.0.2"
     }
   }
 }
 
-# resource "google_compute_network" "vpc" {
-#   name                    = "cloud-infra-vpc"
-#   auto_create_subnetworks = false
-# }
+module "networks" {
+  for_each = local.vpcs
 
-module "vpc" {
-  source = "./modules/vpc"
-  name   = "cloud-infra-vpc"
+  source = "./modules/network"
+
+  vpc_name = each.value.vpc_name
+  subnets  = each.value.subnets
 }
 
-
-resource "google_compute_subnetwork" "subnet" {
-  name          = "cloud-infra-subnet"
-  ip_cidr_range = "10.10.0.0/24"
-  region        = "us-central1"
-  network       = google_compute_network.vpc.id
-}
 
 module "vms" {
   for_each = local.vms
 
   source = "./modules/vms"
 
-  name               = each.value.name
-  zone               = each.value.zone
-  network_interfaces = each.value.network_interfaces
+  name = each.value.name
+  zone = each.value.zone
+  network_interfaces = [
+    {
+      network    = module.networks[each.value.vpc].network_id
+      subnetwork = module.networks[each.value.vpc].subnet_ids[each.value.subnet]
+      network_ip = each.value.network_ip
+    }
+  ]
 }
 
 

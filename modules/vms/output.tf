@@ -24,7 +24,7 @@ output "private_ips" {
 output "public_ips" {
   value = [
     for nic in google_compute_instance.vm.network_interface :
-    nic.access_config[0].nat_ip
+    nic.access_config[0].nat_ip if length(nic.access_config) > 0
   ]
 }
 

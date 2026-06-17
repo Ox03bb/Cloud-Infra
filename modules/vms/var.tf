@@ -34,5 +34,11 @@ variable "network_interfaces" {
   type = list(object({
     network    = string
     subnetwork = string
+    network_ip = optional(string)
   }))
+}
+
+variable "is_public" { # if the VM should have a public IP address
+  type    = bool
+  default = false
 }
