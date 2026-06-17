@@ -3,6 +3,11 @@ variable "vpc_name" {
   type = string
 }
 
+variable "is_public_vpc" {
+  type    = bool
+  default = false
+}
+
 # subnet variables
 variable "subnet_name" {
   type    = string

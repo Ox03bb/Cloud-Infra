@@ -36,5 +36,5 @@ output "subnet_regions" {
 }
 
 output "global_ip" {
-  value = google_compute_global_address.global_ip.address
+  value = try(google_compute_global_address.global_ip[0].address, null)
 }

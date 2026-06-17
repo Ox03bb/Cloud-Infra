@@ -1,4 +1,6 @@
 resource "google_compute_global_address" "global_ip" { # Global IP
+  count = var.is_public_vpc ? 1 : 0
+
   name = "${var.vpc_name}-global-ip"
 
 }

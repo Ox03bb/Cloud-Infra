@@ -16,6 +16,7 @@ locals {
   vpcs = {
     primary = {
       vpc_name = "cloud-infra-primary-vpc"
+      is_public_vpc = true
       subnets = {
         subnet-1 = {
           cidr   = "10.128.0.0/20"
@@ -29,6 +30,7 @@ locals {
     }
     secondary = {
       vpc_name = "cloud-infra-secondary-vpc"
+      is_public_vpc = false
       subnets = {
         subnet-3 = {
           cidr   = "10.140.0.0/20"
@@ -68,8 +70,9 @@ module "networks" {
 
   source = "./modules/network"
 
-  vpc_name = each.value.vpc_name
-  subnets  = each.value.subnets
+  vpc_name      = each.value.vpc_name
+  is_public_vpc = each.value.is_public_vpc
+  subnets       = each.value.subnets
 }
 
 
