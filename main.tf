@@ -14,8 +14,8 @@ provider "google" {
 
 locals {
   vpcs = {
-    primary = {
-      vpc_name = "cloud-infra-primary-vpc"
+    mynetwork = {
+      vpc_name = "mynetwork"
       is_public_vpc = true
       subnets = {
         subnet-1 = {
@@ -28,39 +28,83 @@ locals {
         }
       }
     }
-    secondary = {
-      vpc_name = "cloud-infra-secondary-vpc"
+    privatenet = {
+      vpc_name = "privatenet"
       is_public_vpc = false
       subnets = {
-        subnet-3 = {
-          cidr   = "10.140.0.0/20"
+        subnet-1 = {
+          cidr   = "172.16.0.0/20"
+          region = "us-central1"
+        }
+        subnet-2 = {
+          cidr   = "172.20.0.0/20"
+          region = "europe-west1"
+        }
+      }
+    }
+    managmentnet = {
+      vpc_name = "managmentnet"
+      is_public_vpc = false
+      subnets = {
+        subnet-4 = {
+          cidr   = "10.130.0.0/20"
           region = "us-central1"
         }
       }
     }
+
   }
 
   vms = {
+    # mynetwork VMs
     vm-1 = {
       name       = "mynet-us-vm-1"
       zone       = "us-central1-a"
-      vpc        = "primary"
+      vpc        = "mynetwork"
       subnet     = "subnet-1"
       network_ip = "10.128.0.2"
     }
     vm-2 = {
       name       = "mynet-us-vm-2"
       zone       = "us-central1-a"
-      vpc        = "primary"
+      vpc        = "mynetwork"
       subnet     = "subnet-1"
       network_ip = "10.128.0.3"
     }
     vm-3 = {
       name       = "mynet-eu-vm-1"
       zone       = "europe-west1-b"
-      vpc        = "primary"
+      vpc        = "mynetwork"
       subnet     = "subnet-2"
       network_ip = "10.132.0.2"
+    }
+
+    # private network VMs
+    vm-4 = {
+      name       = "privatenet"
+      zone       = "us-central1-a"
+      type      = "e2-medium"
+      vpc        = "privatenet"
+      subnet     = "subnet-1"
+      network_ip = "172.16.0.2"
+    }
+
+    # managmentnet VMs
+
+    vm-5 = {
+      name       = "privatenet"
+      zone       = "us-central1-a"
+      vpc        = "privatenet"
+      subnet     = "subnet-2"
+      network_ip = "10.130.1.1/20"
+    }
+
+    vm-6 = {
+      name       = "managmentnet"
+      zone       = "us-central1-a"
+      vpc        = "managmentnet"
+      subnet     = "subnet-4"
+      network_ip = "10.130.1.2"
     }
   }
 }
@@ -93,3 +137,32 @@ module "vms" {
 }
 
 
+#! pubsub module
+module "pubsub" {
+  source = "./modules/storage/pubsub"
+
+  topic_name        = "events"
+  subscription_name = "events-worker"
+
+  labels = {
+    environment = "prod"
+    team        = "backend"
+  }
+
+  ack_deadline_seconds = 30
+
+  subscription_message_retention_duration = "1209600s"
+
+  enable_message_ordering = true
+
+  minimum_backoff = "10s"
+  maximum_backoff = "600s"
+
+  publisher_members = [
+    "serviceAccount:api@project-id.iam.gserviceaccount.com"
+  ]
+
+  subscriber_members = [
+    "allAuthenticatedUsers"
+  ]
+}
