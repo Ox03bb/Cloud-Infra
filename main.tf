@@ -106,6 +106,30 @@ locals {
       subnet     = "subnet-1"
       network_ip = "10.130.1.2"
     }
+
+    # multi-vpc hub VM
+    vm-7 = {
+      name         = "appilance-vm"
+      zone         = "us-central1-b"
+      machine_type = "e2-standard-4"
+      network_interfaces = [
+        {
+          network    = module.networks.mynetwork.network_id
+          subnetwork = module.networks.mynetwork.subnet_ids["subnet-1"]
+          network_ip = "10.128.0.10"
+        },
+        {
+          network    = module.networks.privatenet.network_id
+          subnetwork = module.networks.privatenet.subnet_ids["subnet-1"]
+          network_ip = "172.16.0.10"
+        },
+        {
+          network    = module.networks.managmentnet.network_id
+          subnetwork = module.networks.managmentnet.subnet_ids["subnet-1"]
+          network_ip = "10.130.0.10"
+        }
+      ]
+    }
   }
 }
 
@@ -127,13 +151,14 @@ module "vms" {
 
   name = each.value.name
   zone = each.value.zone
-  network_interfaces = [
+  machine_type = try(each.value.machine_type, "e2-micro")
+  network_interfaces = try(each.value.network_interfaces, [
     {
       network    = module.networks[each.value.vpc].network_id
       subnetwork = module.networks[each.value.vpc].subnet_ids[each.value.subnet]
       network_ip = each.value.network_ip
     }
-  ]
+  ])
 }
 
 
