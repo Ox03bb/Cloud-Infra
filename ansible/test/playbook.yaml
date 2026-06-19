@@ -1,9 +1,94 @@
-- name: My first play
+- name: Install Docker and run Nginx container
   hosts: mynetvms
-  tasks:
-    - name: Ping my hosts
-      ansible.builtin.ping:
 
-    - name: Print message
-      ansible.builtin.debug:
-        msg: Hello world
+  tasks:
+
+    # - name: Ping my hosts
+    #   ansible.builtin.ping:
+
+    # -----------------------
+    # Install Docker (Debian/debian)
+    # -----------------------
+    - block:
+        - name: Update and upgrade apt packages
+          ansible.builtin.apt:
+            update_cache: yes
+            upgrade: dist
+
+        - name: Install required packages
+          ansible.builtin.apt:
+            name:
+              - apt-transport-https
+              - ca-certificates
+              - curl
+              - gnupg
+              - lsb-release
+              - ufw
+            state: present
+            update_cache: yes
+
+        - name: Add Docker GPG key
+          ansible.builtin.shell: |
+            curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker.gpg
+          args:
+            creates: /usr/share/keyrings/docker.gpg
+
+        - name: Add Docker repository
+          ansible.builtin.deb822_repository:
+            name: docker
+            types: deb
+            uris: https://download.docker.com/linux/debian
+            suites: "{{ ansible_distribution_release }}"
+            components:
+              - stable
+            architectures: amd64
+            signed_by: /usr/share/keyrings/docker.gpg
+
+        - name: Install Docker Engine
+          ansible.builtin.apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+            state: present
+            update_cache: yes
+
+        - name: Start Docker service
+          ansible.builtin.systemd:
+            name: docker
+            state: started
+            enabled: true
+        
+        - name: add docker group
+          ansible.builtin.group:
+            name: docker
+            state: present
+        
+        - name: Add Ansible user to docker group
+          ansible.builtin.user:
+            name: "{{ ansible_user }}"
+            groups: docker
+            append: true
+
+        - name: restart connection to apply group changes
+          ansible.builtin.meta: reset_connection
+
+   
+      become: true
+
+    # -----------------------
+    # Run Nginx container
+    # -----------------------
+
+    - name : refresh user groups
+      ansible.builtin.command: newgrp docker
+      
+    - name: Run Nginx container
+      community.docker.docker_container:
+        name: nginx-server
+        image: nginx:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "80:80"
+          - "443:443"
