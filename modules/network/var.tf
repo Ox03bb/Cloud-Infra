@@ -23,20 +23,15 @@ variable "subnets" {
 
 
 # firewall variables
-variable "firewall_allow" {
+variable "firewall_rules" {
   type = list(object({
-    protocol = string
-    ports    = list(string)
+    name           = optional(string)
+    allow          = list(object({
+      protocol = string
+      ports    = list(string)
+    }))
+    source_ranges  = list(string)
+    target_tags    = list(string)
   }))
-  default = []
-}
-
-variable "firewall_source_ranges" {
-  type    = list(string)
-  default = []
-}
-
-variable "firewall_target_tags" {
-  type    = list(string)
   default = []
 }

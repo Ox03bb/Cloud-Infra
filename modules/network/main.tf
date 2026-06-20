@@ -21,13 +21,16 @@ resource "google_compute_subnetwork" "subnet" { # subnet
 }
 
 resource "google_compute_firewall" "firewall" { # Firewall
-  count = length(var.firewall_allow) > 0 && length(var.firewall_source_ranges) > 0 && length(var.firewall_target_tags) > 0 ? 1 : 0
+  for_each = {
+    for index, rule in var.firewall_rules : index => rule
+    if length(rule.allow) > 0 && length(rule.source_ranges) > 0 && length(rule.target_tags) > 0
+  }
 
-  name    = "${var.vpc_name}-firewall"
+  name    = coalesce(try(each.value.name, null), "${var.vpc_name}-firewall-${each.key}")
   network = google_compute_network.this.name
 
   dynamic "allow" {
-    for_each = var.firewall_allow
+    for_each = each.value.allow
 
     content {
       protocol = allow.value.protocol
@@ -35,6 +38,6 @@ resource "google_compute_firewall" "firewall" { # Firewall
     }
   }
 
-  source_ranges = var.firewall_source_ranges
-  target_tags   = var.firewall_target_tags
+  source_ranges = each.value.source_ranges
+  target_tags   = each.value.target_tags
 }
