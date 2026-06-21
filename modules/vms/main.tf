@@ -5,7 +5,11 @@ resource "google_compute_instance" "vm" {
 
   tags = var.tags
 
-  metadata_startup_script = var.startup_script
+
+  metadata_startup_script = templatefile("${path.module}/../../scripts/create_user.sh", {
+    ssh_key = file("~/.ssh/ansible.pub")
+  })
+
 
   boot_disk {
     initialize_params {
@@ -25,7 +29,8 @@ resource "google_compute_instance" "vm" {
         for_each = var.is_public ? [1] : []
 
       content {}
-    }
+      }
     }
   }
+  
 }
